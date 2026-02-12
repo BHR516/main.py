@@ -1,12 +1,94 @@
-import streamlit as stimport pandas as pdimport mathfrom pathlib import Path# Set the title and favicon that appear in the Browser's tab bar.st.set_page_config(    page_title='GDP dashboard',    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.)# -----------------------------------------------------------------------------# Declare some useful functions.@st.cache_datadef get_gdp_data():    """Grab GDP data from a CSV file.    This uses caching to avoid having to read the file every time. If we were    reading from an HTTP endpoint instead of a file, it's a good idea to set    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')    """    # Instead of a CSV on disk, you could read from an HTTP import streamlit as st
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import time
 
-st.set_page_config(page_title="تدوير البحرين", page_icon="♻️")
-st.title("♻️ موقع إعادة التدوير في البحرين")
-st.write("أهلاً بك! ساهم معنا في حماية البيئة.")
+# 1. إعدادات الهوية البصرية للموقع
+st.set_page_config(page_title="البحرين تدوّر | Bahrain Recycle", page_icon="🇧🇭", layout="wide")
 
-# قائمة خيارات
-option = st.selectbox('اختر المادة التي تريد تدويرها:', ['بلاستيك', 'ورق', 'زجاج', 'إلكترونيات'])
+# 2. إضافة CSS لتنسيق الواجهة كالتطبيقات الحديثة
+st.markdown("""
+    <style>
+    .stApp { background-color: #f8fafc; }
+    .main-header { font-size: 3rem; color: #15803d; text-align: center; font-weight: bold; margin-bottom: 10px; }
+    .card { background-color: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border-bottom: 4px solid #15803d; }
+    .stat-text { font-size: 1.2rem; color: #475569; }
+    </style>
+    """, unsafe_allow_html=True)
 
-if st.button('عرض النصيحة'):
-    st.success(f"لقد اخترت {option}. تأكد من وضعها في الحاوية المخصصة!")
-    st.balloons()endpoint here too.    DATA_FILENAME = Path(__file__).paren
+# 3. الهيدر وقائمة التفاعل
+st.markdown('<div class="main-header">🇧🇭 منصة تدوير البحرين الذكية</div>', unsafe_allow_html=True)
+st.write("<p style='text-align: center;'>ساهم في حماية بيئة مملكتنا واكسب نقاطاً مقابل كل عملية تدوير</p>", unsafe_allow_html=True)
+
+# 4. لوحة إحصائيات تفاعلية (Dashboard)
+st.divider()
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.metric("حاويات نشطة", "128", "+5")
+with col2:
+    st.metric("مستخدمين نشطين", "1,240", "12%")
+with col3:
+    st.metric("أطنان مدورة (شهر فبراير)", "42.5", "+2.1")
+with col4:
+    st.metric("نقاط المجتمع", "85,000", "🔥")
+
+# 5. نظام المكافآت التفاعلي (Gamification)
+st.sidebar.markdown("### 🏆 نادي أصدقاء البيئة")
+user_name = st.sidebar.text_input("سجل دخولك باسمك لجمع النقاط:", "زائر")
+points = st.sidebar.slider("نقاطك الحالية:", 0, 1000, 450)
+st.sidebar.progress(points / 1000)
+st.sidebar.caption(f"باقي {1000 - points} نقطة للحصول على وسام السفير البيئي!")
+
+# 6. الخريطة الذكية وتفاصيل المواقع
+data = {
+    'المنطقة': ['المنامة', 'الرفاع', 'سترة', 'البسيتين', 'مدينة حمد', 'الحد'],
+    'الموقع التحديدي': ['باب البحرين', 'قرب مدرسة لؤلؤة الخليج', 'مركز سترة الاجتماعي', 'ممشى البسيتين', 'سوق واقف', 'حديقة الحد'],
+    'نوع النفايات': ['إلكترونيات/بلاستيك', 'ورق فقط', 'زجاج/معدن', 'متعدد', 'بلاستيك', 'ورق/كرتون'],
+    'lat': [26.2361, 26.1300, 26.1547, 26.2550, 26.1150, 26.2490],
+    'lon': [50.5831, 50.5550, 50.6070, 50.6750, 50.5050, 50.6480],
+    'الحمل الحالي': [80, 20, 45, 95, 10, 60] # نسبة امتلاء الحاوية
+}
+df = pd.DataFrame(data)
+
+st.subheader("📍 ابحث عن أقرب حاوية وتفقد حالتها")
+c1, c2 = st.columns([2, 1])
+
+with c1:
+    # خريطة ملونة بناءً على نسبة امتلاء الحاوية
+    fig = px.scatter_mapbox(df, lat="lat", lon="lon", size="الحمل الحالي", color="الحمل الحالي",
+                            color_continuous_scale=px.colors.sequential.Greens,
+                            hover_name="المنطقة", hover_data=["الموقع التحديدي", "نوع النفايات"],
+                            zoom=10, height=500)
+    fig.update_layout(mapbox_style="carto-positron")
+    st.plotly_chart(fig, use_container_width=True)
+
+with c2:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.write("### 🔍 تفاصيل سريعة")
+    search = st.selectbox("اختر المنطقة لرؤية الحالة المباشرة:", df['المنطقة'])
+    selected = df[df['المنطقة'] == search].iloc[0]
+    
+    st.write(f"**الموقع:** {selected['الموقع التحديدي']}")
+    st.write(f"**النوع:** {selected['نوع النفايات']}")
+    
+    # شريط حالة لامتلاء الحاوية
+    fill_level = selected['الحمل الحالي']
+    if fill_level > 80:
+        st.error(f"حالة الحاوية: ممتلئة ({fill_level}%)")
+    else:
+        st.success(f"حالة الحاوية: جاهزة للاستخدام ({fill_level}%)")
+    
+    if st.button("✅ لقد قمت بالتدوير هنا!"):
+        with st.spinner('جاري إضافة النقاط لمستواك...'):
+            time.sleep(1)
+            st.balloons()
+            st.success(f"كفو يا {user_name}! حصلت على 50 نقطة.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# 7. قسم التبليغات التفاعلي
+st.divider()
+st.subheader("📢 خدمة المواطنين")
+with st.expander("هل وجدت حاوية ممتلئة أو مكسورة؟ اضغط هنا للتبليغ"):
+    issue_type = st.radio("نوع المشكلة:", ["الحاوية ممتلئة", "الحاوية تالفة", "موقع غير دقيق"])
+    if st.button("إرسال التقرير لوزارة البلديات"):
+        st.toast("شكراً لمواطنتك الصالحة! تم إرسال البلاغ للجهات المختصة.")
