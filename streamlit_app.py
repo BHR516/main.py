@@ -13,102 +13,88 @@ if 'dark_mode' not in st.session_state:
 def toggle_dark_mode():
     st.session_state.dark_mode = not st.session_state.dark_mode
 
-# تحديد الألوان لضمان الوضوح التام للأرقام والحروف
 if st.session_state.dark_mode:
-    bg_color = "#0e1117"
-    text_color = "#FFFFFF" # أبيض ناصع
-    card_color = "#262730"
-    map_style = "carto-darkmatter"
+    bg_color, text_color, card_color, map_style = "#0e1117", "#FFFFFF", "#262730", "carto-darkmatter"
 else:
-    bg_color = "#FFFFFF"
-    text_color = "#000000" # أسود فحم (للأرقام والحروف)
-    card_color = "#F0F2F6"
-    map_style = "open-street-map"
+    bg_color, text_color, card_color, map_style = "#FFFFFF", "#000000", "#F0F2F6", "open-street-map"
 
-# 3. تطبيق CSS (هذا الجزء هو الذي سيجبر الأرقام على الظهور)
+# 3. تطبيق التنسيق (CSS) لإظهار الأرقام والحروف بوضوح
 st.markdown(f"""
     <style>
-    /* تلوين الخلفية والنصوص الأساسية */
     .stApp {{ background-color: {bg_color} !important; color: {text_color} !important; }}
-    
-    /* إجبار الأرقام (Metrics) على الوضوح التام */
     [data-testid="stMetricValue"] {{ color: {text_color} !important; font-weight: bold !important; }}
-    [data-testid="stMetricLabel"] {{ color: {text_color} !important; }}
-    [data-testid="stMetricDelta"] {{ font-weight: bold !important; }}
-
-    /* تلوين العناوين الرئيسية والفرعية */
-    h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown {{ color: {text_color} !important; }}
-
-    /* تنسيق البطاقات (Cards) */
+    h1, h2, h3, h4, p, span, label {{ color: {text_color} !important; }}
     .card {{ 
         background-color: {card_color} !important; 
         color: {text_color} !important; 
-        padding: 25px; 
-        border-radius: 20px; 
-        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); 
-        border-top: 5px solid #10b981; 
-        margin-bottom: 20px;
+        padding: 20px; border-radius: 15px; border-top: 5px solid #10b981; margin-bottom: 20px;
     }}
-    .card h3, .card h4, .card p, .card b {{ color: {text_color} !important; }}
     </style>
     """, unsafe_allow_html=True)
 
-# 4. الهيدر وزر التبديل
-col_title, col_toggle = st.columns([4, 1])
-with col_title:
-    st.markdown(f'<h1 style="color: #10b981 !important;">📍 مواقع حاويات إعادة التدوير</h1>', unsafe_allow_html=True)
-with col_toggle:
-    st.button("🌙 وضع الليل" if not st.session_state.dark_mode else "☀️ وضع النهار", on_click=toggle_dark_mode)
-
-# 5. قاعدة البيانات
+# 4. قاعدة البيانات المطورة (مع ساعات العمل)
 data = {
     'المنطقة': ['المنامة', 'الرفاع', 'سترة', 'البسيتين', 'مدينة حمد', 'الحد'],
-    'الموقع الدقيق': ['بجانب باب البحرين', 'ممشى الاستقلال - البوابة 2', 'خلف مجمع سترة التجاري', 'ساحل البسيتين الجديد', 'دوار 17 - قرب المسجد', 'حديقة الحد الكبرى'],
-    'سعة الحاوية': ['5000L', '2000L', '3500L', '5000L', '2500L', '3500L'],
-    'المواد': ['بلاستيك، ورق، معدن', 'بلاستيك فقط', 'زجاج، ورق', 'متعدد المواد', 'إلكترونيات', 'كرتون وورق'],
-    'آخر إفراغ': ['قبل ساعتين', 'أمس', 'قبل 5 ساعات', 'الآن', 'منذ يومين', 'قبل 3 ساعات'],
+    'تفتح': ['08:00 AM', '09:00 AM', '07:00 AM', '24 ساعة', '08:00 AM', '06:00 AM'],
+    'تغلق': ['10:00 PM', '09:00 PM', '08:00 PM', '-', '11:00 PM', '09:00 PM'],
+    'المواد المطلوبة': ['بلاستيك، ورق', 'بلاستيك فقط', 'معدن، زجاج', 'جميع المواد', 'إلكترونيات', 'كرتون'],
+    'تاريخ الإفراغ': ['اليوم 10:00 AM', 'أمس 04:00 PM', 'اليوم 07:00 AM', 'اليوم 12:00 PM', 'منذ يومين', 'أمس 09:00 PM'],
     'lat': [26.2361, 26.1300, 26.1547, 26.2550, 26.1150, 26.2490],
     'lon': [50.5831, 50.5550, 50.6070, 50.6750, 50.5050, 50.6480],
-    'الامتلاء': [85, 15, 40, 95, 10, 60]
+    'الامتلاء': [85, 40, 60, 95, 20, 70],
+    'الشعار': ['♻️']*6
 }
 df = pd.DataFrame(data)
 
-# 6. لوحة الإحصائيات (Metrics)
-st.divider()
-st.subheader("📊 حالة النظام المباشرة")
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("جاهزية الشبكة", "98%")
-m2.metric("حاويات ممتلئة", "2")
-m3.metric("توفير CO2", "450kg")
-m4.metric("المساهمين اليوم", "+342")
+# 5. الهيدر
+col_title, col_toggle = st.columns([4, 1])
+with col_title:
+    st.title("📍 مواقع حاويات إعادة التدوير")
+with col_toggle:
+    st.button("🌙" if not st.session_state.dark_mode else "☀️", on_click=toggle_dark_mode)
 
-# 7. الخريطة والتفاصيل
+# 6. الخريطة المطورة (تكبير الدوائر وإضافة التفاصيل)
 st.write("---")
 c1, c2 = st.columns([1.5, 1])
 
 with c1:
     st.markdown("### 🗺️ الخريطة التفاعلية")
-    fig = px.scatter_mapbox(df, lat="lat", lon="lon", size="الامتلاء", color="الامتلاء",
-                            color_continuous_scale='RdYlGn_r', zoom=10, height=550)
+    # تم إلغاء ربط الحجم بالامتلاء لجعل كل الدوائر "كبيرة وواضحة" (Size=25)
+    fig = px.scatter_mapbox(df, lat="lat", lon="lon", 
+                            color="الامتلاء",
+                            color_continuous_scale='RdYlGn_r',
+                            hover_name="المنطقة",
+                            # إضافة التفاصيل الجديدة في الـ Hover
+                            hover_data={
+                                'lat': False, 'lon': False, 'الامتلاء': True,
+                                'تفتح': True, 'تغلق': True, 'المواد المطلوبة': True, 'تاريخ الإفراغ': True
+                            },
+                            zoom=10, height=600)
+    
+    # تكبير الدوائر بشكل ثابت (Update Marker Size)
+    fig.update_traces(marker={'size': 25, 'opacity': 0.8})
+    
     fig.update_layout(mapbox_style=map_style, margin={"r":0,"t":0,"l":0,"b":0})
     st.plotly_chart(fig, use_container_width=True)
 
 with c2:
-    choice = st.selectbox("اختر المنطقة للتفاصيل:", df['المنطقة'])
+    st.markdown("### 🔍 بطاقة المعلومات التفصيلية")
+    choice = st.selectbox("اختر الحاوية:", df['المنطقة'])
     row = df[df['المنطقة'] == choice].iloc[0]
+    
     st.markdown(f"""
     <div class="card">
-        <h3>منطقة {choice}</h3>
-        <p>📍 <b>الموقع:</b> {row['الموقع الدقيق']}</p>
-        <p>📦 <b>السعة:</b> {row['سعة الحاوية']}</p>
-        <p>♻️ <b>المواد:</b> {row['المواد']}</p>
-        <p>🕒 <b>آخر إفراغ:</b> {row['آخر إفراغ']}</p>
+        <h2 style='text-align: center;'>♻️ {choice}</h2>
         <hr>
-        <h2 style='color: {"#ef4444" if row['الامتلاء'] > 80 else "#10b981"} !important;'>{row['الامتلاء']}% ممتلئة</h2>
+        <p>⏰ <b>ساعات العمل:</b> من {row['تفتح']} إلى {row['تغلق']}</p>
+        <p>📋 <b>المواد المطلوبة:</b> {row['المواد المطلوبة']}</p>
+        <p>🚛 <b>آخر موعد إفراغ:</b> {row['تاريخ الإفراغ']}</p>
+        <p>📊 <b>حالة الامتلاء الحالية:</b></p>
+        <h1 style='text-align: center; color: {"#ef4444" if row['الامتلاء'] > 80 else "#10b981"} !important;'>{row['الامتلاء']}%</h1>
     </div>
     """, unsafe_allow_html=True)
     
-    if st.button("🚀 تحديث البيانات"):
-        with st.status("جاري التحديث..."):
+    if st.button("🚀 تحديث البيانات الميدانية"):
+        with st.status("جاري جلب البيانات من حساسات البحرين..."):
             time.sleep(1)
-            st.success("تم!")
+            st.success("تم التحديث!")
